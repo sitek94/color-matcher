@@ -26,9 +26,7 @@ export function App() {
   return (
     <div className="max-w-5xl mx-auto p-6 bg-white">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Color Similarity Finder
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Color Matcher</h1>
         <p className="text-gray-600">
           Find the closest design token match for your legacy colors
         </p>
