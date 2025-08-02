@@ -1,5 +1,6 @@
 import {useState, useMemo} from 'react'
 import {Search, Copy, Check} from 'lucide-react'
+import {findClosestMatches, isValidHex, parseAvailableColors} from './utils'
 
 export function App() {
   const [targetColor, setTargetColor] = useState('#7A7A7A')
@@ -13,56 +14,11 @@ export function App() {
 }`)
   const [copied, setCopied] = useState('')
 
-  // Convert hex to RGB
-  const hexToRgb = (hex: string) => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-    return result
-      ? {
-          r: parseInt(result[1], 16),
-          g: parseInt(result[2], 16),
-          b: parseInt(result[3], 16),
-        }
-      : null
-  }
 
-  // Calculate Euclidean distance between two colors
-  const calculateColorDistance = (color1: string, color2: string) => {
-    const rgb1 = hexToRgb(color1)
-    const rgb2 = hexToRgb(color2)
-
-    if (!rgb1 || !rgb2) return Infinity
-
-    return Math.sqrt(
-      Math.pow(rgb1.r - rgb2.r, 2) +
-        Math.pow(rgb1.g - rgb2.g, 2) +
-        Math.pow(rgb1.b - rgb2.b, 2),
-    )
-  }
-
-  // Find closest color match
-  const findClosestMatches = useMemo(() => {
-    try {
-      const colorsObj = JSON.parse(availableColors)
-      const matches = []
-
-      for (const [name, color] of Object.entries(colorsObj)) {
-        const distance = calculateColorDistance(targetColor, color)
-        if (distance !== Infinity) {
-          matches.push({name, color, distance})
-        }
-      }
-
-      return matches.sort((a, b) => a.distance - b.distance)
-    } catch (error) {
-      console.error(error)
-      return []
-    }
+  const closestMatches = useMemo(() => {
+    return findClosestMatches(targetColor, availableColors)
   }, [targetColor, availableColors])
 
-  // Validate hex color
-  const isValidHex = (hex: string) => {
-    return /^#[0-9A-F]{6}$/i.test(hex)
-  }
 
   // Copy to clipboard
   const copyToClipboard = (text: string, type: string) => {
@@ -72,7 +28,7 @@ export function App() {
   }
 
   const isValidTarget = isValidHex(targetColor)
-  const hasValidJson = findClosestMatches.length > 0
+  const hasValidJson = parseAvailableColors(availableColors) !== null
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white">
@@ -144,7 +100,7 @@ export function App() {
 
           {isValidTarget && hasValidJson ? (
             <div className="space-y-3">
-              {findClosestMatches.slice(0, 5).map((match, index) => (
+              {closestMatches.slice(0, 5).map((match, index) => (
                 <div
                   key={match.name}
                   className={`p-4 border rounded-lg ${
@@ -220,7 +176,7 @@ export function App() {
       </div>
 
       {/* Color Comparison */}
-      {isValidTarget && hasValidJson && findClosestMatches.length > 0 && (
+      {isValidTarget && hasValidJson && closestMatches.length > 0 && (
         <div className="mt-8 p-6 bg-gray-50 rounded-lg">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Visual Comparison
@@ -238,11 +194,11 @@ export function App() {
             <div className="text-center">
               <div
                 className="w-20 h-20 rounded-lg border-2 border-gray-300 mb-2"
-                style={{backgroundColor: findClosestMatches[0].color}}
+                style={{backgroundColor: closestMatches[0].color}}
               />
               <div className="text-sm text-gray-600">Best Match</div>
               <div className="font-mono text-xs">
-                {findClosestMatches[0].color}
+                {closestMatches[0].color}
               </div>
             </div>
           </div>
