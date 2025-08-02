@@ -1,26 +1,16 @@
-import {useState, useMemo} from 'react'
+import {useState} from 'react'
 import {Search, Copy, Check} from 'lucide-react'
 import {findClosestMatches, isValidHex, parseAvailableColors} from './utils'
+import {useLocalStorage} from 'usehooks-ts'
 
 export function App() {
   const [targetColor, setTargetColor] = useState('#7A7A7A')
-  const [availableColors, setAvailableColors] = useState(`{
-  "sapInformativeColor": "#91c8f6",
-  "sapNeutralColor": "#d3d7d9",
-  "sapNegativeElementColor": "#ff8888",
-  "sapCriticalElementColor": "#fabd64",
-  "sapPositiveElementColor": "#abe2ab",
-  "sapInformativeElementColor": "#91c8f6"
-}`)
+  const [availableColorsInput, setAvailableColors] = useLocalStorage(
+    'availableColors',
+    '',
+  )
   const [copied, setCopied] = useState('')
 
-
-  const closestMatches = useMemo(() => {
-    return findClosestMatches(targetColor, availableColors)
-  }, [targetColor, availableColors])
-
-
-  // Copy to clipboard
   const copyToClipboard = (text: string, type: string) => {
     navigator.clipboard.writeText(text)
     setCopied(type)
@@ -28,10 +18,13 @@ export function App() {
   }
 
   const isValidTarget = isValidHex(targetColor)
-  const hasValidJson = parseAvailableColors(availableColors) !== null
+  const availableColors = parseAvailableColors(availableColorsInput)
+  const hasValidJson = availableColors !== null
+  const closestMatches = findClosestMatches(targetColor, availableColorsInput)
+  const formattedAvailableColors = JSON.stringify(availableColors, null, 2)
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white">
+    <div className="max-w-5xl mx-auto p-6 bg-white">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
           Color Similarity Finder
@@ -43,7 +36,7 @@ export function App() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Input Section */}
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Target Color (Hex)
@@ -74,18 +67,18 @@ export function App() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="flex flex-col gap-2 grow">
+            <label className="block text-sm font-medium text-gray-700">
               Available Colors (JSON)
             </label>
             <textarea
-              value={availableColors}
+              value={formattedAvailableColors}
               onChange={e => setAvailableColors(e.target.value)}
               rows={8}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm grow"
               placeholder='{"colorName": "#hexvalue"}'
             />
-            {!hasValidJson && availableColors.trim() && (
+            {!hasValidJson && availableColorsInput.trim() && (
               <p className="text-red-500 text-xs mt-1">Invalid JSON format</p>
             )}
           </div>
@@ -197,9 +190,7 @@ export function App() {
                 style={{backgroundColor: closestMatches[0].color}}
               />
               <div className="text-sm text-gray-600">Best Match</div>
-              <div className="font-mono text-xs">
-                {closestMatches[0].color}
-              </div>
+              <div className="font-mono text-xs">{closestMatches[0].color}</div>
             </div>
           </div>
         </div>
