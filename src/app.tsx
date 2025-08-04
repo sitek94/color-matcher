@@ -1,4 +1,4 @@
-import {Check, Copy, Search} from 'lucide-react'
+import {Search} from 'lucide-react'
 import {useState} from 'react'
 import {useLocalStorage} from 'usehooks-ts'
 import {ValidColorField} from './components/valid-color-field'
@@ -16,13 +16,7 @@ export function App() {
     'availableColors',
     '',
   )
-  const [copied, setCopied] = useState('')
-
-  const copyToClipboard = (text: string, type: string) => {
-    navigator.clipboard.writeText(text)
-    setCopied(type)
-    setTimeout(() => setCopied(''), 2000)
-  }
+  const [selectedMatchIndex, setSelectedMatchIndex] = useState(0)
 
   const isValidTarget = isValidColor(targetColor)
   const availableColors = parseAvailableColors(availableColorsInput)
@@ -31,34 +25,59 @@ export function App() {
     targetColor,
     availableColors || {},
     backgroundColor,
-    20,
+    200,
   )
   const formattedAvailableColors = JSON.stringify(availableColors, null, 2)
+  const selectedMatch = closestMatches[selectedMatchIndex] || closestMatches[0]
+
+  const handleTargetChange = (color: string) => {
+    setTargetColor(color)
+    setSelectedMatchIndex(0)
+  }
+
+  const handleBackgroundChange = (color: string) => {
+    setBackgroundColor(color)
+    setSelectedMatchIndex(0)
+  }
 
   return (
-    <div className="max-w-5xl mx-auto p-6 bg-white">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Color Matcher</h1>
-        <p className="text-gray-600">
-          Find the closest design token match for your legacy colors
-        </p>
-      </div>
+    <div className="bg-white h-screen grid grid-rows-[auto_1fr] gap-8 pt-12 mx-auto max-w-4xl">
+      <header className="grid grid-cols-2 gap-8 items-end">
+        <div className="flex flex-col gap-8 justify-end">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Color Matcher
+            </h1>
+            <p className="text-gray-600">
+              Find the closest design token match for your legacy colors
+            </p>
+          </div>
+          <div className="flex flex-col gap-4">
+            <ValidColorField
+              label="Target Color"
+              value={targetColor}
+              onChange={handleTargetChange}
+            />
+            <ValidColorField
+              label="Background Color (optional, defaults to white)"
+              value={backgroundColor}
+              onChange={handleBackgroundChange}
+            />
+          </div>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {isValidTarget &&
+          hasValidJson &&
+          closestMatches.length > 0 &&
+          selectedMatch && (
+            <ColorComparison targetColor={targetColor} match={selectedMatch} />
+          )}
+      </header>
+
+      <div className="grid grid-cols-2 gap-8 overflow-hidden">
         {/* Input Section */}
-        <div className="flex flex-col gap-6">
-          <ValidColorField
-            label="Target Color"
-            value={targetColor}
-            onChange={setTargetColor}
-          />
-          <ValidColorField
-            label="Background Color (optional, defaults to white)"
-            value={backgroundColor}
-            onChange={setBackgroundColor}
-          />
-
-          <div className="flex flex-col gap-2 grow">
+        <div className="flex flex-col gap-6 grow h-full">
+          <div className="flex flex-col gap-2 grow h-full">
             <label
               htmlFor="availableColors"
               className="block text-sm font-medium text-gray-700"
@@ -80,92 +99,55 @@ export function App() {
         </div>
 
         {/* Results Section */}
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900">
-            <Search className="inline w-5 h-5 mr-2" />
-            Results
-          </h2>
-
-          {isValidTarget && hasValidJson && closestMatches.length > 0 && (
-            <ColorComparison
-              targetColor={targetColor}
-              input={closestMatches[0]}
-            />
-          )}
-
+        <div className="flex flex-col gap-4 h-full overflow-hidden">
           {isValidTarget && hasValidJson ? (
-            <div className="space-y-3">
-              {closestMatches.map((match, index) => (
-                <div
-                  key={match.tokenName}
-                  className={`p-4 border rounded-lg ${
-                    index === 0
-                      ? 'border-blue-300 bg-blue-50'
-                      : 'border-gray-200'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-8 h-8 rounded border-2 border-gray-300"
-                        style={{backgroundColor: match.tokenValue}}
-                      />
-                      <div>
-                        <div className="font-medium text-gray-900">
-                          {match.tokenName}
+            <div className="h-full overflow-hidden">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                All Matches
+              </h3>
+              <div className="overflow-y-scroll h-full grow">
+                <div className="space-y-2 h-full overflow-y-scroll pb-12">
+                  {closestMatches.map((match, index) => (
+                    <div
+                      key={match.tokenName}
+                      onClick={() => setSelectedMatchIndex(index)}
+                      className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                        index === selectedMatchIndex
+                          ? 'border-blue-500 bg-blue-50 shadow-sm'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-10 h-10 rounded border-2 border-gray-300 shadow-sm"
+                            style={{backgroundColor: match.tokenValue}}
+                          />
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {match.tokenName}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {match.tokenValue}
+                            </div>
+                          </div>
                         </div>
-                        <div className="text-sm text-gray-500">
-                          {match.tokenValue}
+                        <div className="text-right">
+                          <div className="text-sm text-gray-500">Distance</div>
+                          <div className="font-mono text-sm font-medium">
+                            {Math.round(match.distance)}
+                          </div>
+                          {index === 0 && (
+                            <div className="text-xs text-blue-600 font-medium mt-1">
+                              Best Match
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-sm text-gray-500">Distance</div>
-                      <div className="font-mono text-sm">
-                        {Math.round(match.distance)}
-                      </div>
-                    </div>
-                  </div>
-
-                  {index === 0 && (
-                    <div className="mt-3 pt-3 border-t border-blue-200">
-                      <div className="text-sm text-blue-600 font-medium mb-2">
-                        Best Match!
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            copyToClipboard(match.tokenName, 'name')
-                          }
-                          className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200"
-                        >
-                          {copied === 'name' ? (
-                            <Check className="w-3 h-3" />
-                          ) : (
-                            <Copy className="w-3 h-3" />
-                          )}
-                          Copy Name
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            copyToClipboard(match.tokenValue, 'color')
-                          }
-                          className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200"
-                        >
-                          {copied === 'color' ? (
-                            <Check className="w-3 h-3" />
-                          ) : (
-                            <Copy className="w-3 h-3" />
-                          )}
-                          Copy Color
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
@@ -175,8 +157,6 @@ export function App() {
           )}
         </div>
       </div>
-
-      {/* Color Comparison */}
     </div>
   )
 }
