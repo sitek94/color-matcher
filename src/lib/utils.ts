@@ -1,5 +1,7 @@
+import {type ClassValue, clsx} from 'clsx'
 import Color, {type ColorInstance} from 'color'
 import {closest, diff, rgba_to_lab as rgbaToLab} from 'color-diff'
+import {twMerge} from 'tailwind-merge'
 
 interface ColorToken {
 	[key: string]: string
@@ -65,7 +67,8 @@ export function findClosestMatches(
 		const distance = diff(rgbaToLab(inputRgb), rgbaToLab(match))
 
 		return {
-			tokenName: Object.keys(availableColors).find(
+			// biome-ignore lint/style/noNonNullAssertion: The match was already found
+			tokenName: Object.keys(availableColors)?.find(
 				key => availableColors[key] === matchedToken.value,
 			)!,
 			tokenValue: matchedToken.value,
@@ -149,7 +152,7 @@ export function isValidColor(color: string) {
 	try {
 		Color(color)
 		return true
-	} catch (error) {
+	} catch (_error) {
 		return false
 	}
 }
@@ -162,7 +165,7 @@ export function parseAvailableColors(input: string) {
 
 	try {
 		inputColors = JSON.parse(input)
-	} catch (error) {
+	} catch (_error) {
 		throw new Error('Available colors must be a valid JSON object')
 	}
 
@@ -177,4 +180,11 @@ export function parseAvailableColors(input: string) {
 	)
 
 	return validColors
+}
+
+/**
+ * Merges class names into a single string
+ */
+export function cn(...inputs: ClassValue[]) {
+	return twMerge(clsx(inputs))
 }
