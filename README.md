@@ -1,26 +1,20 @@
-# Color Similarity Finder
+# Color Matcher
 
-## Core Features
-- **Input Section**: Field to enter a hex color (like `#7A7A7A`)
-- **Design Tokens Section**: Text area to paste your JSON object of available colors
-- **Results Display**: Shows the closest matching design token with:
-  - Color name (e.g., "sapNeutralColor")
-  - Color value (e.g., "#d3d7d9")
-  - Visual color swatches for both input and matched colors
-  - Similarity score/distance
+Find the closest design token match for your legacy colors using perceptually accurate color matching.
 
-## Algorithm
-- Convert hex colors to RGB values
-- Calculate Euclidean distance in RGB color space to find closest match
-- Could also show top 3-5 closest matches for comparison
+## Features
 
-## Interface
-- Clean, developer-friendly design
-- Side-by-side color preview
-- Easy copy-paste functionality for the results
-- Real-time matching as you type
+- **Color Input**: Enter any hex color (like `#7A7A7A`) as your target
+- **Design Tokens**: Paste your JSON object of available colors
+- **Smart Matching**: Uses CIEDE2000 algorithm for perceptually accurate matching
+- **Interactive Results**: Click any match to compare it with your target color
+- **Copy to Clipboard**: Easy copy buttons for both color names and values
+- **Background Support**: Optional background color for transparency handling
 
-## Future Enhancements
-- Support for RGBA input
-- Different color distance algorithms (LAB, HSL)
-- Batch processing multiple colors
+## Usage
+
+1. Enter your target color in hex format
+2. Paste your design tokens as JSON: `{"tokenName": "#hexvalue"}`
+3. View results sorted by perceptual distance
+4. Click any match to see a detailed comparison
+5. Copy token names or color values with one click
