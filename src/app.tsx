@@ -2,25 +2,34 @@ import {Search} from 'lucide-react'
 import {useState} from 'react'
 import {useLocalStorage} from 'usehooks-ts'
 import {ColorComparison} from './components/color-comparison'
+import {ValidAvailableColorsField} from './components/valid-available-colors-field'
 import {ValidColorField} from './components/valid-color-field'
-import {cn, findMultipleClosestMatches, isValidColor, parseAvailableColors} from './lib/utils'
+import {
+	type ColorTokens,
+	cn,
+	findMultipleClosestMatches,
+	isValidColor,
+	parseAvailableColorsSafe,
+} from './lib/utils'
 
 export function App() {
 	const [targetColor, setTargetColor] = useState('#7A7A7A')
 	const [backgroundColor, setBackgroundColor] = useState('#FFFFFF')
-	const [availableColorsInput, setAvailableColors] = useLocalStorage('availableColors', '')
 	const [selectedMatchIndex, setSelectedMatchIndex] = useState(0)
+	const [savedColors, setSavedColors] = useLocalStorage('availableColors', '{}')
+	const [availableColors, setAvailableColors] = useState<ColorTokens | null>(() => {
+		const parsed = parseAvailableColorsSafe(savedColors)
+		return parsed.success ? parsed.data : null
+	})
 
 	const isValidTarget = isValidColor(targetColor)
-	const availableColors = parseAvailableColors(availableColorsInput)
-	const hasValidJson = availableColors !== null
+	const hasValidColors = availableColors !== null
 	const closestMatches = findMultipleClosestMatches(
 		targetColor,
 		availableColors || {},
 		backgroundColor,
 		200,
 	)
-	const formattedAvailableColors = JSON.stringify(availableColors, null, 2)
 	const selectedMatch = closestMatches[selectedMatchIndex] || closestMatches[0]
 
 	const handleTargetChange = (color: string) => {
@@ -30,6 +39,12 @@ export function App() {
 
 	const handleBackgroundChange = (color: string) => {
 		setBackgroundColor(color)
+		setSelectedMatchIndex(0)
+	}
+
+	const handleAvailableColorsChange = (colors: ColorTokens) => {
+		setAvailableColors(colors)
+		setSavedColors(JSON.stringify(colors, null, 2))
 		setSelectedMatchIndex(0)
 	}
 
@@ -57,35 +72,24 @@ export function App() {
 					</div>
 				</div>
 
-				{isValidTarget && hasValidJson && closestMatches.length > 0 && selectedMatch && (
+				{isValidTarget && hasValidColors && closestMatches.length > 0 && selectedMatch && (
 					<ColorComparison targetColor={targetColor} match={selectedMatch} />
 				)}
 			</header>
 
 			<div className="grid grid-cols-2 gap-8 overflow-hidden">
 				{/* Input Section */}
-				<div className="flex flex-col gap-6 grow h-full">
-					<div className="flex flex-col gap-2 grow h-full">
-						<label htmlFor="availableColors" className="block text-sm font-medium text-gray-700">
-							Available Colors (JSON)
-						</label>
-						<textarea
-							id="availableColors"
-							value={formattedAvailableColors}
-							onChange={e => setAvailableColors(e.target.value)}
-							rows={8}
-							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm grow"
-							placeholder='{"colorName": "#hexvalue"}'
-						/>
-						{!hasValidJson && availableColorsInput.trim() && (
-							<p className="text-red-500 text-xs mt-1">Invalid JSON format</p>
-						)}
-					</div>
+				<div className="grow h-full pb-12">
+					<ValidAvailableColorsField
+						label="Available Colors (JSON)"
+						initialValue={savedColors}
+						onChange={handleAvailableColorsChange}
+					/>
 				</div>
 
 				{/* Results Section */}
 				<div className="flex flex-col gap-4 h-full overflow-hidden">
-					{isValidTarget && hasValidJson ? (
+					{isValidTarget && hasValidColors ? (
 						<div className="h-full overflow-hidden">
 							<h3 className="text-lg font-semibold text-gray-900 mb-3">All Matches</h3>
 							<div className="overflow-y-scroll h-full grow">

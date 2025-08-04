@@ -2,8 +2,9 @@ import {type ClassValue, clsx} from 'clsx'
 import Color, {type ColorInstance} from 'color'
 import {closest, diff, rgba_to_lab as rgbaToLab} from 'color-diff'
 import {twMerge} from 'tailwind-merge'
+import z from 'zod'
 
-interface ColorToken {
+export interface ColorTokens {
 	[key: string]: string
 }
 
@@ -21,7 +22,7 @@ interface ColorMatch {
  */
 export function findClosestMatches(
 	input: string,
-	availableColors: ColorToken,
+	availableColors: ColorTokens,
 	backgroundColor: string = '#ffffff', // Default white background
 ): ColorMatch {
 	try {
@@ -104,7 +105,7 @@ function composeWithBackground(inputColor: ColorInstance, backgroundColor: strin
 
 export function findMultipleClosestMatches(
 	input: string,
-	availableColors: ColorToken,
+	availableColors: ColorTokens,
 	backgroundColor: string = '#ffffff',
 	count: number = 3,
 ): ColorMatch[] {
@@ -159,27 +160,46 @@ export function isValidColor(color: string) {
 
 /**
  * Parses available colors from a JSON string and returns a record of valid colors
+ * Returns null if input is invalid
  */
-export function parseAvailableColors(input: string) {
-	let inputColors: Record<string, string> = {}
+export function parseAvailableColors(input: string): ColorTokens {
+	if (!input.trim()) {
+		throw new Error(`Available colors can't be empty`)
+	}
+
+	let inputColors: ColorTokens = {}
 
 	try {
 		inputColors = JSON.parse(input)
 	} catch (_error) {
+		throw new Error('Available colors must be a valid JSON')
+	}
+
+	if (!z.record(z.string(), z.string()).safeParse(inputColors).success) {
 		throw new Error('Available colors must be a valid JSON object')
 	}
 
-	const validColors = Object.entries(inputColors).reduce(
-		(acc, [name, value]) => {
-			if (isValidColor(value)) {
-				acc[name] = value
-			}
-			return acc
-		},
-		{} as Record<string, string>,
-	)
+	const validColors = Object.entries(inputColors).reduce((acc, [name, value]) => {
+		if (typeof value === 'string' && isValidColor(value)) {
+			acc[name] = value
+		}
+		return acc
+	}, {} as ColorTokens)
 
 	return validColors
+}
+
+export function parseAvailableColorsSafe(input: string) {
+	try {
+		const parsed = parseAvailableColors(input)
+		return {success: true, data: parsed, error: null} as const
+	} catch (error) {
+		console.error(error)
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : 'Unknown error',
+		} as const
+	}
 }
 
 /**
