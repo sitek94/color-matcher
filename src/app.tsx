@@ -12,11 +12,24 @@ import {
 	parseAvailableColorsSafe,
 } from './lib/utils'
 
+const initialColorTokens = {
+	sapBrandColor: '#427cac',
+	sapHighlightColor: '#427cac',
+	sapBaseColor: '#eff4f9',
+	sapBackgroundColor: '#fafafa',
+	sapFontSize: '.875rem',
+	sapTextColor: '#333',
+	sapLinkColor: '#0070b1',
+}
+
 export function App() {
-	const [targetColor, setTargetColor] = useState('#7A7A7A')
-	const [backgroundColor, setBackgroundColor] = useState('#FFFFFF')
+	const [targetColor, setTargetColor] = useState('#327cac')
+	const [backgroundColor, setBackgroundColor] = useState('#ffffff')
 	const [selectedMatchIndex, setSelectedMatchIndex] = useState(0)
-	const [savedColors, setSavedColors] = useLocalStorage('availableColors', '{}')
+	const [savedColors, setSavedColors] = useLocalStorage(
+		'availableColors',
+		JSON.stringify(initialColorTokens, null, 2),
+	)
 	const [availableColors, setAvailableColors] = useState<ColorTokens | null>(() => {
 		const parsed = parseAvailableColorsSafe(savedColors)
 		return parsed.success ? parsed.data : null
